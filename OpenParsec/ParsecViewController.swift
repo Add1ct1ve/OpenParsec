@@ -21,6 +21,7 @@ class ParsecViewController: UIViewController, UIScrollViewDelegate {
     var lastMouseY: Int32 = -1
     var lastCursorHidden: Bool = false
 	var isPinching = false
+	var zoomEnabled = false
 	var lastLongPressPoint : CGPoint = CGPoint()
 	var accumulatedDeltaX: Float = 0.0
 	var accumulatedDeltaY: Float = 0.0
@@ -36,14 +37,6 @@ class ParsecViewController: UIViewController, UIScrollViewDelegate {
 	var onKeyboardVisibilityChanged: ((Bool) -> Void)?
 	var scrollView: UIScrollView!
 	var contentView: UIView!
-
-	lazy var handleButton: UIButton = {
-		let button = UIButton(type: .system)
-		button.setTitle("↑↓", for: .normal)
-		button.backgroundColor = .systemGray
-		button.isUserInteractionEnabled = true
-		return button
-	}()
 
 	override var prefersPointerLocked: Bool {
 		return true
@@ -298,6 +291,7 @@ class ParsecViewController: UIViewController, UIScrollViewDelegate {
 		if keyboardVisible {
 			becomeFirstResponder()
 		}
+		scrollView.pinchGestureRecognizer?.isEnabled = false
 	}
 	
 	override func viewWillDisappear(_ animated: Bool) {
@@ -346,13 +340,6 @@ class ParsecViewController: UIViewController, UIScrollViewDelegate {
 
                  scrollView.setContentOffset(CGPoint(x: scrollView.contentOffset.x, y: newOffsetY), animated: true)
 				
-				print(mouseY)
-				
-				 if mouseY < 300 {
-					 // Move mouse down to prevent camera jump when user moves the mouse
-					 let newMouseY = Int32(mouseY + 100)
-					 CParsec.sendMousePosition(CParsec.mouseInfo.mouseX, newMouseY)
-				 }
             }
 		}
 		onKeyboardVisibilityChanged?(true)
@@ -394,14 +381,42 @@ extension ParsecViewController : UIGestureRecognizerDelegate {
 	@objc func handlePanGesture(_ gestureRecognizer: UIPanGestureRecognizer)
 	{
 		//		print("number = \(gestureRecognizer.numberOfTouches) status = \(gestureRecognizer.state.rawValue)")
-		if gestureRecognizer.numberOfTouches == 2 {
+		// lock activatedPanFingerNumber in case user not releasing both finger at the same time
+		if gestureRecognizer.numberOfTouches == 0 {
+			if gestureRecognizer.state == .ended || gestureRecognizer.state == .cancelled {
+				activatedPanFingerNumber = 0
+				// Reset accumulators
+				accumulatedDeltaX = 0.0
+				accumulatedDeltaY = 0.0
+				lastPanTranslation = .zero
+
+				if SettingsHandler.cursorMode == .direct {
+					let button = ParsecMouseButton.init(rawValue: 1)
+					CParsec.sendMouseClickMessage(button, false)
+				}
+			}
+		} else if activatedPanFingerNumber == 2 || (gestureRecognizer.numberOfTouches == 2 && activatedPanFingerNumber == 0) {
             // Native UIScrollView handles 2-finger pan for scrolling.
             // We disable the mouse wheel for now to avoid conflict, or we can check gesture state.
             // If user wants wheel, we might need a specific mode or 3 fingers.
-            // For now, let's allow scroll to work for camera movement.
-            return
-		} else if gestureRecognizer.numberOfTouches == 1 {
-
+			if zoomEnabled {
+				return
+			}
+			activatedPanFingerNumber = 2
+			let velocity = gestureRecognizer.velocity(in: gestureRecognizer.view)
+			
+			if abs(velocity.y) > 2 {
+				// Run your function when the user uses two fingers and swipes upwards
+				CParsec.sendWheelMsg(x: 0, y: Int32(Float(velocity.y) / 20 * mouseSensitivity))
+				return
+			}
+			if SettingsHandler.cursorMode == .direct {
+				let location = gestureRecognizer.location(in:gestureRecognizer.view)
+				touchController.onTouch(typeOfTap: 1, location: location, state: gestureRecognizer.state)
+			}
+		} else if activatedPanFingerNumber == 1 || (gestureRecognizer.numberOfTouches == 1 && activatedPanFingerNumber == 0) {
+			activatedPanFingerNumber = 1
+			// move mouse
 			if SettingsHandler.cursorMode == .direct {
                 // Map screen tap to content coordinates
 				let position = gestureRecognizer.location(in: gestureRecognizer.view)
@@ -444,18 +459,6 @@ extension ParsecViewController : UIGestureRecognizerDelegate {
 				CParsec.sendMouseClickMessage(button, true)
 			}
 
-		} else if gestureRecognizer.numberOfTouches == 0 {
-			if gestureRecognizer.state == .ended || gestureRecognizer.state == .cancelled {
-				// Reset accumulators
-				accumulatedDeltaX = 0.0
-				accumulatedDeltaY = 0.0
-				lastPanTranslation = .zero
-
-				if SettingsHandler.cursorMode == .direct {
-					let button = ParsecMouseButton.init(rawValue: 1)
-					CParsec.sendMouseClickMessage(button, false)
-				}
-			}
 		}
 	}
 	
@@ -518,6 +521,11 @@ extension ParsecViewController : UIGestureRecognizerDelegate {
 
 	func scrollViewDidZoom(_ scrollView: UIScrollView) {
 		// Update isPinching if needed, or other logic
+	}
+	
+	func setZoomEnabled(_ enabled: Bool) {
+		zoomEnabled = enabled
+		scrollView.pinchGestureRecognizer?.isEnabled = enabled
 	}
 	
 }
@@ -677,17 +685,7 @@ extension ParsecViewController : UIKeyInput, UITextInputTraits {
 		toolbarBackground.addSubview(scrollView)
 		toolbarBackground.addSubview(doneButton)
 
-		// Handle button with frame-based layout
-		handleButton.frame = CGRect(x: containerView.bounds.width - 100, y: 5, width: 40, height: 40)
-		handleButton.autoresizingMask = [.flexibleLeftMargin]
-		handleButton.layer.cornerRadius = 20
-
-		let panGestureRecognizer = UIPanGestureRecognizer(target: self, action: #selector(self.handleDragGesture(_:)))
-		panGestureRecognizer.maximumNumberOfTouches = 1
-		handleButton.addGestureRecognizer(panGestureRecognizer)
-
 		containerView.addSubview(toolbarBackground)
-		containerView.addSubview(handleButton)
 
 		keyboardAccessoriesView = containerView
 		return containerView
@@ -744,21 +742,6 @@ extension ParsecViewController : UIKeyInput, UITextInputTraits {
 		
 	}
 	
-	@objc func handleDragGesture(_ gestureRecognizer: UIPanGestureRecognizer) {
-		// Calculate potential new translationY
-        // Currently view.transform might have scaling if we were zooming, but wait:
-        // view.transform is mostly Identity because we use UIScrollView for zooming now.
-        // However, if we translated 'view' (the VC root view), it shifts the scrollview too.
-        
-		let currentTy = view.transform.ty
-		let deltaY = gestureRecognizer.velocity(in: nil).y / 50.0
-		let newTy = ParsecSDKBridge.clamp(currentTy + deltaY, minValue: -keyboardHeight, maxValue: 0)
-        
-        // Apply pure translation. If we had other transforms on 'view', we should concatenate.
-        // But 'view' is supposed to be identity usually.
-		view.transform = CGAffineTransform(translationX: 0, y: newTy)
-	}
-
 	@objc func doneTapped() {
 		// Resign first responder to dismiss the keyboard
 		resignFirstResponder()

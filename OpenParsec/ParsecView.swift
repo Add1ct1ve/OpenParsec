@@ -96,6 +96,7 @@ struct ParsecView: View
 	@State var showMenu: Bool = false
 
 	@State var showKeyboard: Bool = false
+	@State var zoomEnabled: Bool = false
 
 	@State var muted: Bool = false
     @State var preferH265: Bool = true
@@ -273,9 +274,9 @@ struct ParsecView: View
 									.frame(maxWidth:.infinity)
 									.multilineTextAlignment(.center)
 							}
-							Button(action: toggleKeyboard)
+							Button(action: toggleZoom)
 							{
-								Text("Keyboard: \(showKeyboard ? "ON" : "OFF")")
+								Text("Zoom: \(zoomEnabled ? "ON" : "OFF")")
 									.padding(8)
 									.frame(maxWidth:.infinity)
 									.multilineTextAlignment(.center)
@@ -422,6 +423,13 @@ struct ParsecView: View
 		DispatchQueue.main.async {
 			showKeyboard.toggle()
 			parsecViewController.setKeyboardVisible(showKeyboard)
+		}
+	}
+	
+	func toggleZoom() {
+		DispatchQueue.main.async {
+			zoomEnabled.toggle()
+			parsecViewController.setZoomEnabled(zoomEnabled)
 		}
 	}
 	
