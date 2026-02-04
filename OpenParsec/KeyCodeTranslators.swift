@@ -506,96 +506,91 @@ class KeyCodeTranslators {
 		
 		switch key {
 			// Non-shifted characters
-		case "-":
+		case "-", "－":  // U+FF0D fullwidth hyphen-minus
 			parsecKeycode = 45
-		case "=":
+		case "=", "＝":  // U+FF1D fullwidth equals sign
 			parsecKeycode = 46
-		case "[":
+		case "[", "［":  // U+FF3B fullwidth left square bracket
 			parsecKeycode = 47
-		case "]":
+		case "]", "］":  // U+FF3D fullwidth right square bracket
 			parsecKeycode = 48
-		case "\\":
+		case "\\", "＼":  // U+FF3C fullwidth reverse solidus
 			parsecKeycode = 49
-		case ";":
+		case ";", "；":  // U+FF1B fullwidth semicolon
 			parsecKeycode = 51
-		case "’":
-			parsecKeycode = 52
-		case "'":
+		case "'", "'", "'":  // U+2019 right single curly quote, U+2018 left single curly quote
 			parsecKeycode = 52
 		case "`":
 			parsecKeycode = 53
-		case ",":
+		case ",", "，":  // U+FF0C fullwidth comma
 			parsecKeycode = 54
-		case ".":
+		case ".", "．":  // U+FF0E fullwidth full stop
 			parsecKeycode = 55
-		case "/":
+		case "/", "／":  // U+FF0F fullwidth solidus
 			parsecKeycode = 56
 			
 			// Shifted characters
-		case "_":
+		case "_", "＿":  // U+FF3F fullwidth low line
 			parsecKeycode = 45
 			keyMod = true
-		case "+":
+		case "+", "＋":  // U+FF0B fullwidth plus sign
 			parsecKeycode = 46
 			keyMod = true
-		case "{":
+		case "{", "｛":  // U+FF5B fullwidth left curly bracket
 			parsecKeycode = 47
 			keyMod = true
-		case "}":
+		case "}", "｝":  // U+FF5D fullwidth right curly bracket
 			parsecKeycode = 48
 			keyMod = true
-		case "|":
+		case "|", "｜":  // U+FF5C fullwidth vertical line
 			parsecKeycode = 49
 			keyMod = true
-		case ":":
+		case ":", "：":  // U+FF1A fullwidth colon
 			parsecKeycode = 51
 			keyMod = true
-		case "\"":
+		case "\"", """:  // U+201D right double curly quote
 			parsecKeycode = 52
 			keyMod = true
-		case "”":
-			parsecKeycode = 52
-			keyMod = true
-		case "~":
+		case "~", "～":  // U+FF5E fullwidth tilde
 			parsecKeycode = 53
 			keyMod = true
-		case "<":
+		case "<", "＜":  // U+FF1C fullwidth less-than sign
 			parsecKeycode = 54
 			keyMod = true
-		case ">":
+		case ">", "＞":  // U+FF1E fullwidth greater-than sign
 			parsecKeycode = 55
 			keyMod = true
-		case "?":
+		case "?", "？":  // U+FF1F fullwidth question mark
 			parsecKeycode = 56
 			keyMod = true
-		case "!":
+		case "!", "！":  // U+FF01 fullwidth exclamation mark
 			parsecKeycode = 30
 			keyMod = true
-		case "@":
+		case "@", "＠":  // U+FF20 fullwidth commercial at
 			parsecKeycode = 31
 			keyMod = true
-		case "#":
+		case "#", "＃":  // U+FF03 fullwidth number sign
 			parsecKeycode = 32
 			keyMod = true
-		case "$":
+		case "$", "＄":  // U+FF04 fullwidth dollar sign
 			parsecKeycode = 33
 			keyMod = true
-		case "%":
+		case "%", "％":  // U+FF05 fullwidth percent sign
 			parsecKeycode = 34
 			keyMod = true
-		case "^":
+		case "^", "＾":  // U+FF3E fullwidth circumflex accent
 			parsecKeycode = 35
 			keyMod = true
-		case "&":
+		case "&", "＆":  // U+FF06 fullwidth ampersand
 			parsecKeycode = 36
 			keyMod = true
-		case "*":
+		case "*", "＊":  // U+FF0A fullwidth asterisk
 			parsecKeycode = 37
 			keyMod = true
-		case "(":
+		case "(", "（":  // U+FF08 fullwidth left parenthesis
 			parsecKeycode = 38
 			keyMod = true
-		case ")":
+		case ")", "）":  // U+FF09 fullwidth right parenthesis
 			parsecKeycode = 39
 			keyMod = true
 			
